@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script is meant to be used in a development environment in order to avoid accidental deletions.
+# This script is meant to give an extra chance of restoring files or directories after an accidental deletion.
 # Place it in a directory such as /usr/local/bin and modify the $PATH to prioritize
 # the execution of this script over the real rm.
 #
