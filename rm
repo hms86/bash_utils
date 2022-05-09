@@ -1,0 +1,123 @@
+#!/bin/bash
+# This script is meant to be used in a development environment in order to avoid accidental deletions.
+# Place it in a directory such as /usr/local/bin and modify the $PATH to prioritize
+# the execution of this script over the real rm.
+#
+# Requires: at
+# Author: Charalampos Madenidis
+
+# Set the following three parameters before using the script.
+locationOfRecycleBin="$HOME"
+trashRetentionTime="1pm + 2 days"
+deleteInputDirectlyIfBiggerThanKB="1000000"
+
+# Do not modify something below this line
+exitcode=0
+Recycle_Bin="$locationOfRecycleBin/Recycle_Bin"
+[[ -d "$Recycle_Bin" ]] || mkdir -p "$Recycle_Bin"
+
+function bypassMV {
+    # Bypass the mv command completely and execute a normal rm -i
+    if ! [[ $* =~ FeedSingleFile_$$ ]]
+    then
+        /usr/bin/rm -i "$@"
+        exit $?
+    fi
+    # Bypass the mv command only for the given input
+    /usr/bin/rm -rf "$1"
+}
+
+function activateMV {
+
+    # Store only inputs and discard options and keywords
+    for i in "$@"
+    do
+        if ! [[ $i =~ ^- ]] && ! [[ $i == noOptionsRule_$$ ]]
+        then
+            inputs+="$i "
+        fi
+    done
+
+    if [[ -n $inputs ]]
+    then
+        for file in $inputs
+        do
+            if [[ -n $file ]]
+            then
+                fileSize=$(du -s "$file" | awk '{print $1}')
+                availableSpaceInRecycleBin=$(df -k --output=avail "$Recycle_Bin" | tail -n1)
+
+                # If the given input is too big, or there is not enough space in the Recycle Bin, or if the input is already in the Recycle bin, then execute a normal rm.
+                [[ $fileSize -gt $deleteInputDirectlyIfBiggerThanKB ]] && { bypassMV "$file" FeedSingleFile_$$; continue; }
+                [[ $fileSize -gt $availableSpaceInRecycleBin ]] && { bypassMV "$file" FeedSingleFile_$$; continue; }
+                [[ $(realpath "$file") =~ "Recycle_Bin" ]] && { bypassMV "$file" FeedSingleFile_$$; continue; }
+
+                # If the user does not use any options, then ask the same questions as a normal rm.
+                if [[ $* =~ noOptionsRule_$$ ]]
+                then
+                    if [[ -d $file ]]
+                    then
+                        echo "rm: cannot remove \"$file\": Is a directory"
+                        continue
+                    elif ! [[ -s $file ]]
+                    then
+                        read -rp "rm: remove regular empty file \"$file\"?" answer
+                        [[ $answer =~ yes|y ]] || continue
+                    elif [[ -s $file ]]
+                    then
+                        read -rp "rm: remove regular file \"$file\"?" answer
+                        [[ $answer =~ yes|y ]] || continue
+                    elif [[ -L $file ]]
+                    then
+                        read -rp "rm: remove symbolic link \"$file\"?" answer
+                        [[ $answer =~ yes|y ]] || continue
+                    fi
+                fi
+                if [[ $force ]] && ! [[ $recursive ]]
+                then
+                    if [[ -d $file ]]
+                    then
+                        echo "rm: cannot remove \"$file\": Is a directory"
+                        continue
+                    fi
+                fi
+
+                # Move the input into the Recycle Bin and create a schedule task so it will be deleted in the future.
+                only_file_name=$(echo "$file" | sed 's/.*\/\(.*\)/\1/')
+                if [[ -e $Recycle_Bin/$only_file_name ]]
+                then
+                    only_file_name+="_$(date +%s)"
+                fi
+                if mv "$file" "$Recycle_Bin/$only_file_name" 2>/dev/null
+                then
+                    echo "/usr/bin/rm -rf $Recycle_Bin/$only_file_name" | at -M "$trashRetentionTime" &>/dev/null
+                    atLeastOneMoveWasDone=true
+                else
+                    echo "rm: cannot remove \"$file\": Operation not permitted"
+                    exitcode=1
+                fi
+            fi
+        done
+    fi
+    [[ $exitcode -eq 0 ]] && [[ $atLeastOneMoveWasDone ]] && echo "Files moved temporarily under $Recycle_Bin before deletion."
+    exit $exitcode
+}
+
+while getopts rfi option
+do
+    case $option in
+        r)  recursive=true;
+            activateMV=true;;
+        f)  force=true;
+            activateMV=true;;
+        i)  echo "interactive" >/dev/null;;
+        *)  bypassMV=true;;
+    esac
+done 2>/dev/null
+
+# If the user calls this script using any options other than -r or -f, then bypass the entire script and use the normal rm binary.
+[[ $bypassMV ]] && bypassMV "$@"
+# If the user calls this script using -r or -f or both, then mv the inputs in the Recycle Bin instead of deleting them.
+[[ $activateMV ]] && activateMV "$@"
+# If the user does not give any options or if only the -i option is given, then ask the same questions as the normal rm -i would before treating the inputs.
+activateMV "$@" noOptionsRule_$$
