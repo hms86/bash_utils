@@ -116,7 +116,7 @@ do
 done 2>/dev/null
 
 # If the shell is not interactive then bypass the entire script and use the normal rm binary.
-[[ -z "$PS1" ]] && bypassMV "$@"
+[[ $(tty) =~ "not a tty" ]] && bypassMV "$@"
 # If the user calls this script using any options other than -r or -f, then bypass the entire script and use the normal rm binary.
 [[ $bypassMV ]] && bypassMV "$@"
 # If the user calls this script using -r or -f or both, then mv the inputs in the Recycle Bin instead of deleting them.
