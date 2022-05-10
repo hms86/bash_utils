@@ -1,0 +1,4 @@
+#!/bin/bash
+rm="/opt/RecycleBin_installed/rm"
+[[ $1 == "enable" ]] && [[ -f $rm ]] && [[ ! -L /usr/local/bin/rm ]] && ln -s $rm /usr/local/bin/rm
+[[ $1 == "disable" ]] && [[ -L /usr/local/bin/rm ]] && /usr/bin/rm -f /usr/local/bin/rm
