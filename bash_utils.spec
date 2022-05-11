@@ -6,8 +6,8 @@ Summary:        Usefull tools for admins
 BuildArch:      noarch
 
 License:        GPLv3
-Source0:        rm
-Source1:        recyclebin
+Source0:        SOURCES/rm
+Source1:        SOURCES/recyclebin
 
 Requires:       at
 
