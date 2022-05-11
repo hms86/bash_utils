@@ -61,15 +61,15 @@ function activateMV {
                         continue
                     elif ! [[ -s $file ]]
                     then
-                        read -rp "rm: remove regular empty file \"$file\"?" answer
+                        read -rp "rm: remove regular empty file \"$file\"? " answer
                         [[ $answer =~ yes|y ]] || continue
                     elif [[ -s $file ]]
                     then
-                        read -rp "rm: remove regular file \"$file\"?" answer
+                        read -rp "rm: remove regular file \"$file\"? " answer
                         [[ $answer =~ yes|y ]] || continue
                     elif [[ -L $file ]]
                     then
-                        read -rp "rm: remove symbolic link \"$file\"?" answer
+                        read -rp "rm: remove symbolic link \"$file\"? " answer
                         [[ $answer =~ yes|y ]] || continue
                     fi
                 fi
