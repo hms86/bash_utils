@@ -1,7 +1,7 @@
-Name:           bash_utils
+Name:           recycle_bin
 Version:        1.0.0
 Release:        1.el7
-Summary:        Usefull tools for admins
+Summary:        recycle bin for linux
 
 BuildArch:      noarch
 
@@ -12,7 +12,7 @@ Source1:        recyclebin
 Requires:       at
 
 %description
-Usefull tools for admins
+recycle bin for linux
 
 %prep
 
@@ -35,4 +35,4 @@ install -pm 755  %{SOURCE1} $RPM_BUILD_ROOT/usr/local/bin/
 
 %changelog
 * Tue May 10 2022 Charalampos Madenidis <charrismadenidis@gmail.com> - 1.0.0
-- First version of bash_utils
+- First version of recycle bin
