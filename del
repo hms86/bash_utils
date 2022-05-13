@@ -1,0 +1,55 @@
+#!/bin/bash
+# This script is meant to give an extra chance of restoring files or directories after an accidental deletion.
+#
+# Requires: at
+# Author: Charalampos Madenidis
+
+# Set the following three parameters before using the script.
+locationOfRecycleBin="$HOME"
+trashRetentionTime="1pm + 2 days"
+deleteInputDirectlyIfBiggerThanKB="1000000"
+
+# Do not modify something below this line
+exitcode=0
+Recycle_Bin="$locationOfRecycleBin/Recycle_Bin"
+[[ -d "$Recycle_Bin" ]] || mkdir -p "$Recycle_Bin"
+
+while getopts he option
+do
+    case $option in
+        e)    /usr/bin/rm -rf "${Recycle_Bin:?}/"*
+              exit 0 ;;
+        h|*)  echo "This command moves files into a recycle bin and later deletes them."
+              echo "Run without inputs to see where the recycle bin is, and with -e to empty the recycle bin."
+              exit 0 ;;
+    esac
+done
+
+# If no inputs are given print the location of the recycle bin
+[[ -z $* ]] && echo "$Recycle_Bin" && exit 0
+
+for file in "$@"
+do
+    [[ ! -e $file ]] && continue
+
+    fileSize=$(du -s "$file" | awk '{print $1}')
+    availableSpaceInRecycleBin=$(df -k --output=avail "$Recycle_Bin" | tail -n1)
+
+    # If the given input is too big, or there is not enough space in the Recycle Bin, or if the input is already in the Recycle bin, then execute a normal rm.
+    [[ $fileSize -gt $deleteInputDirectlyIfBiggerThanKB ]] && { echo "Item $file is to big for the recycle bin"; continue; }
+    [[ $fileSize -gt $availableSpaceInRecycleBin ]] && { echo "Not enough space in the recycle bin for item $file"; continue; }
+
+    # Move the input into the Recycle Bin and create a schedule task so it will be deleted in the future.
+    only_file_name=$(echo "$file" | sed 's/.*\/\(.*\)/\1/')
+    [[ -e $Recycle_Bin/$only_file_name ]] && only_file_name+="_$(date +%s)"
+
+    # Main action
+    if mv "$file" "$Recycle_Bin/$only_file_name" 2>/dev/null
+    then
+        echo "/usr/bin/rm -rf $Recycle_Bin/$only_file_name" | at -M "$trashRetentionTime" &>/dev/null
+    else
+        echo "dd: cannot remove \"$file\": Operation not permitted"
+        exitcode=1
+    fi
+done
+exit $exitcode

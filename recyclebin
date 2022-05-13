@@ -1,5 +1,0 @@
-#!/bin/bash
-rm="/opt/RecycleBin_installed/rm"
-rm_link="/usr/local/bin/rm"
-[[ $1 == "enable" ]] && [[ -f $rm ]] && [[ ! -L $rm_link ]] && ln -s $rm $rm_link
-[[ $1 == "disable" ]] && [[ -L $rm_link ]] && /usr/bin/rm -f $rm_link
