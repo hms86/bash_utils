@@ -18,6 +18,8 @@ while getopts he option
 do
     case $option in
         e)    /usr/bin/rm -rf "${Recycle_Bin:?}/"*
+              # shellcheck disable=SC2086
+              jobs=$(find /var/spool/at -type f -exec grep -l Recycle_Bin {} \;) && [[ -n $jobs ]] && /usr/bin/rm -f $jobs
               exit 0 ;;
         h|*)  echo "This command moves files into a recycle bin and later deletes them."
               echo "Run without inputs to see where the recycle bin is, and with -e to empty the recycle bin."
